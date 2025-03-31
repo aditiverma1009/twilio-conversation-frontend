@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../store/store';
 import { register, setError } from '../store/slices/authSlice';
+import { useAppDispatch } from '../hooks/reduxHook';
 
 const Register: React.FC = () => {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { loading, error } = useSelector((state: RootState) => state.auth);
   const [formData, setFormData] = useState({

@@ -29,9 +29,11 @@ const App: React.FC = () => {
         const token = 'YOUR_TWILIO_TOKEN';
         const twilioClient = new Client(token);
         
-        twilioClient.on('conversationAdded', (conversation) => {
+        twilioClient.on('conversationAdded', async (conversation) => {
           const extendedConversation = asExtendedConversation(conversation);
-          dispatch(setConversations([...client?.conversations || [], extendedConversation]));
+          const paginator = await twilioClient.getSubscribedConversations();
+          const conversations = paginator.items;
+          dispatch(setConversations([...conversations, extendedConversation]));
         });
 
         await twilioClient.initialize();

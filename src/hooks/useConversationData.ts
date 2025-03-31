@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Message, Paginator } from '@twilio/conversations';
+import { Message, Paginator, MessageUpdateReason } from '@twilio/conversations';
 import { ExtendedMessage, ExtendedConversation, asExtendedMessage } from '../types/twilio';
 import axios from 'axios';
-
 interface Participant {
   sid: string;
   identity: string;
@@ -103,10 +102,17 @@ export const useConversationData = ({
       updateUnreadCount();
     };
 
-    const handleMessageUpdated = (message: Message) => {
-      setMessages(prev => 
-        prev.map(m => m.sid === message.sid ? asExtendedMessage(message) : m)
-      );
+    const handleMessageUpdated = (data: { message: Message; updateReasons: MessageUpdateReason[] }) => {
+      const message = data.message;
+      setMessages(prev => {
+        const index = prev.findIndex(m => m.sid === message.sid);
+        if (index !== -1) {
+          const newMessages = [...prev];
+          newMessages[index] = message;
+          return newMessages;
+        }
+        return prev;
+      });
     };
 
     const handleParticipantUpdated = () => {

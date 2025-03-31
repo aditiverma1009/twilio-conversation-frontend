@@ -1,0 +1,429 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/conversations": {
+      "get": {
+        "operationId": "ConversationsController_getConversations",
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of conversations with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetConversationsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all conversations",
+        "tags": [
+          "Conversations"
+        ]
+      },
+      "post": {
+        "operationId": "ConversationsController_createConversation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateConversationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The conversation has been created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetConversationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new conversation",
+        "tags": [
+          "Conversations"
+        ]
+      }
+    },
+    "/conversations/{conversationSid}": {
+      "get": {
+        "operationId": "ConversationsController_getConversation",
+        "parameters": [
+          {
+            "name": "conversationSid",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Conversation details with participants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetConversationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a conversation by SID",
+        "tags": [
+          "Conversations"
+        ]
+      }
+    },
+    "/conversations/{conversationSid}/participants": {
+      "get": {
+        "operationId": "ConversationsController_getParticipants",
+        "parameters": [
+          {
+            "name": "conversationSid",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of participants",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetParticipantsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get participants of a conversation",
+        "tags": [
+          "Conversations"
+        ]
+      },
+      "post": {
+        "operationId": "ConversationsController_addParticipants",
+        "parameters": [
+          {
+            "name": "conversationSid",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddParticipantsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The participants have been added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetParticipantsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add participants to a conversation",
+        "tags": [
+          "Conversations"
+        ]
+      }
+    },
+    "/conversations/{conversationSid}/participants/{participantSid}": {
+      "delete": {
+        "operationId": "ConversationsController_removeParticipant",
+        "parameters": [
+          {
+            "name": "conversationSid",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "participantSid",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The participant has been removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a participant from a conversation",
+        "tags": [
+          "Conversations"
+        ]
+      }
+    },
+    "/auth": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Login into application",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/users": {
+      "post": {
+        "operationId": "UsersController_create",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Chat API",
+    "description": "The Chat API description",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "GetConversationsResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the request was successful",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "description": "The response data"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if request failed"
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "GetConversationResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the request was successful",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "description": "The response data"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if request failed"
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "CreateConversationDto": {
+        "type": "object",
+        "properties": {
+          "friendlyName": {
+            "type": "string",
+            "description": "The friendly name for the conversation",
+            "example": "Team Chat"
+          },
+          "participants": {
+            "description": "Array of user identities to add to the conversation",
+            "example": [
+              "user1",
+              "user2"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "participants"
+        ]
+      },
+      "GetParticipantsResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the request was successful",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "description": "The response data"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if request failed"
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      },
+      "AddParticipantsDto": {
+        "type": "object",
+        "properties": {
+          "participants": {
+            "description": "Array of user identities to add to the conversation",
+            "example": [
+              "user3",
+              "user4"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "participants"
+        ]
+      },
+      "ApiResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Whether the request was successful",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "description": "The response data"
+          },
+          "error": {
+            "type": "string",
+            "description": "Error message if request failed"
+          }
+        },
+        "required": [
+          "success",
+          "data"
+        ]
+      }
+    }
+  }
+}

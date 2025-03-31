@@ -76,18 +76,18 @@ const ChatWindow: React.FC = () => {
             <div
               key={msg.sid}
               className={`mb-4 flex ${
-                msg.author === currentConversation.client?.identity ? 'justify-end' : 'justify-start'
+                msg.author === localStorage.getItem('userId') ? 'justify-end' : 'justify-start'
               }`}
             >
               <div
                 className={`max-w-[70%] rounded-lg p-3 ${
-                  msg.author === currentConversation.client?.identity
+                  msg.author === localStorage.getItem('userId')
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-100'
                 }`}
               >
                 <div className="text-sm font-medium mb-1">
-                  {msg.author === currentConversation.client?.identity ? 'You' : msg.author}
+                  {msg.author === localStorage.getItem('userId') ? 'You' : msg.author}
                 </div>
                 <div className="text-sm">{msg.body}</div>
                 {extendedMessage.attachedMedia && extendedMessage.attachedMedia.length > 0 && (

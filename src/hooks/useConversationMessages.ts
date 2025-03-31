@@ -61,14 +61,21 @@ export const useConversationMessages = ({
   useEffect(() => {
     if (!conversation) return;
 
-    const handleNewMessage = (data: { message: Message }) => {
-      setMessages(prev => [...prev, asExtendedMessage(data.message)]);
+    const handleNewMessage = (message: Message) => {
+      setMessages(prev => [...prev, message]);
     };
 
     const handleMessageUpdated = (data: { message: Message; updateReasons: MessageUpdateReason[] }) => {
-      setMessages(prev => 
-        prev.map(m => m.sid === data.message.sid ? asExtendedMessage(data.message) : m)
-      );
+      const message = data.message;
+      setMessages(prev => {
+        const index = prev.findIndex(m => m.sid === message.sid);
+        if (index !== -1) {
+          const newMessages = [...prev];
+          newMessages[index] = message;
+          return newMessages;
+        }
+        return prev;
+      });
     };
 
     conversation.on('messageAdded', handleNewMessage);

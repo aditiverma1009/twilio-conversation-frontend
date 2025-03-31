@@ -1,11 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTwilioChat } from '../hooks/useTwilioChat';
 import { useDispatch } from 'react-redux';
 import axios from 'axios';
+import { Client } from '@twilio/conversations';
 
 export const ChatInitializer: React.FC = () => {
   const dispatch = useDispatch();
   const [token, setToken] = React.useState<string | null>(null);
+  const [client, setClient] = useState<Client | null>(null);
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -15,7 +17,12 @@ export const ChatInitializer: React.FC = () => {
             Authorization: `Bearer ${localStorage.getItem('jwt')}`
           }
         });
-        setToken(response.data.accessToken);
+        const token = response.data.accessToken;
+        if (token) {
+          const newClient = new Client(token);
+          setToken(response.data.accessToken);
+          setClient(newClient);
+        }
       } catch (error) {
         console.error('Error fetching Twilio token:', error);
       }
@@ -25,7 +32,9 @@ export const ChatInitializer: React.FC = () => {
   }, []);
 
   // Initialize Twilio client with the token
-  useTwilioChat(token || '');
+  if (client) {
+    useTwilioChat(client);
+  }
 
   return null;
 }; 

@@ -8,11 +8,17 @@ export interface ExtendedConversation extends Conversation {
 
 export interface ExtendedMessage extends Message {
   attachedMedia: ExtendedMedia[] | null;
-  attributes: JSONValue; // Remove optional since Twilio always provides attributes
+  attributes: JSONValue;
 }
 
 export interface ExtendedMedia extends Media {
   url: string;
+}
+
+declare module '@twilio/conversations' {
+  interface ClientEvents {
+    messageRead: (message: Message) => void;
+  }
 }
 
 // Type assertion helpers

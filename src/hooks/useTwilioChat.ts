@@ -1,113 +1,26 @@
-import { useEffect, useState } from 'react';
-import { Client, Conversation, Message } from '@twilio/conversations';
-import { ExtendedConversation, ExtendedMessage, asExtendedConversation, asExtendedMessage } from '../types/twilio';
+import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { addMessage, updateConversation, removeConversation, updateUnreadCount } from '../store/slices/chatSlice';
-import axios from 'axios';
+import { Client, Conversation, Message } from '@twilio/conversations';
+import { addConversation, updateConversation, updateUnreadCount } from '../store/slices/chatSlice';
+import { ExtendedConversation, asExtendedConversation } from '../types/twilio';
+import { useAppDispatch } from './reduxHook';
 
-export const useTwilioChat = (initialToken: string) => {
-  const dispatch = useDispatch();
-  const [client, setClient] = useState<Client | null>(null);
-
-  const refreshToken = async () => {
-    try {
-      // The backend will verify the current JWT and return a new Twilio token
-      const response = await axios.get('/api/twilio/token', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('jwt')}` // Your JWT token
-        }
-      });
-      return response.data.accessToken;
-    } catch (error) {
-      console.error('Error refreshing Twilio token:', error);
-      throw error;
-    }
-  };
-
-  const fetchUnreadCount = async (conversation: Conversation) => {
-    try {
-      const count = await conversation.getUnreadMessagesCount();
-      return count || 0;
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
-      return 0;
-    }
-  };
-
-  const fetchParticipants = async (conversationId: string) => {
-    try {
-      const response = await axios.get(`/api/conversations/${conversationId}/participants`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`
-        }
-      });
-      return response.data.participants;
-    } catch (error) {
-      console.error('Error fetching participants:', error);
-      return [];
-    }
-  };
+export const useTwilioChat = (conversationsClient: Client) => {
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
-    if (!initialToken) return;
-
-    const conversationsClient = new Client(initialToken);
-
-    // Handle connection state changes
-    conversationsClient.on('connectionStateChanged', (state) => {
-      console.log('Connection state changed:', state);
-    });
-
-    // Handle new conversations
-    conversationsClient.on('conversationAdded', async (conversation) => {
-      const extendedConversation = asExtendedConversation(conversation);
-      const unreadCount = await fetchUnreadCount(conversation);
-      const participants = await fetchParticipants(conversation.sid);
-      
-      dispatch(updateConversation({
-        ...extendedConversation,
-        unreadMessageCount: unreadCount,
-        participants
-      }));
-    });
+    const fetchUnreadCount = async (conversation: Conversation) => {
+      const count = await conversation.getUnreadMessagesCount();
+      return count || 0;
+    };
 
     // Handle conversation updates
-    conversationsClient.on('conversationUpdated', async (conversation) => {
+    conversationsClient.on('conversationUpdated', async (data: { conversation: Conversation; updateReasons: string[] }) => {
+      const conversation = data.conversation;
       const extendedConversation = asExtendedConversation(conversation);
-      const unreadCount = await fetchUnreadCount(conversation);
-      const participants = await fetchParticipants(conversation.sid);
+      dispatch(updateConversation(extendedConversation));
       
-      dispatch(updateConversation({
-        ...extendedConversation,
-        unreadMessageCount: unreadCount,
-        participants
-      }));
-    });
-
-    // Handle leaving conversations
-    conversationsClient.on('conversationLeft', (conversation) => {
-      dispatch(removeConversation(conversation.sid));
-    });
-
-    // Handle new messages
-    conversationsClient.on('messageAdded', async (message) => {
-      const extendedMessage = asExtendedMessage(message);
-      const conversation = message.conversation;
-      
-      // Update unread count for the conversation
-      const unreadCount = await fetchUnreadCount(conversation);
-      dispatch(updateUnreadCount({
-        conversationId: conversation.sid,
-        count: unreadCount
-      }));
-
-      // Add the message
-      dispatch(addMessage(extendedMessage));
-    });
-
-    // Handle message read status
-    conversationsClient.on('messageRead', async (message) => {
-      const conversation = message.conversation;
+      // Update unread count
       const unreadCount = await fetchUnreadCount(conversation);
       dispatch(updateUnreadCount({
         conversationId: conversation.sid,
@@ -115,54 +28,45 @@ export const useTwilioChat = (initialToken: string) => {
       }));
     });
 
-    // Handle token expiration
-    conversationsClient.on('tokenAboutToExpire', async () => {
-      try {
-        const newToken = await refreshToken();
-        conversationsClient.updateToken(newToken);
-      } catch (error) {
-        console.error('Failed to refresh token:', error);
-      }
+    // Handle message updates (including read status)
+    conversationsClient.on('messageUpdated', async ({ message }) => {
+      const conversation = await conversationsClient.getConversationBySid(message.conversation.sid);
+      if (!conversation) return; // Prevent errors if conversation is undefined
+    
+      const unreadCount = await fetchUnreadCount(conversation);
+      dispatch(updateUnreadCount({
+        conversationId: conversation.sid,
+        count: unreadCount
+      }));
     });
 
-    conversationsClient.on('tokenExpired', async () => {
+    // Initialize conversations
+    const initializeConversations = async () => {
       try {
-        const newToken = await refreshToken();
-        conversationsClient.updateToken(newToken);
-      } catch (error) {
-        console.error('Failed to refresh token:', error);
-      }
-    });
-
-    // Initialize the client
-    conversationsClient.initialize().then(async () => {
-      console.log('Twilio client initialized');
-      
-      // Fetch initial unread counts for all conversations
-      const conversations = conversationsClient.conversations;
-      for (const conversation of conversations) {
-        const unreadCount = await fetchUnreadCount(conversation);
-        const participants = await fetchParticipants(conversation.sid);
+        await conversationsClient.initialize();
         
-        dispatch(updateConversation({
-          ...asExtendedConversation(conversation),
-          unreadMessageCount: unreadCount,
-          participants
-        }));
-      }
-      
-      setClient(conversationsClient);
-    }).catch((error) => {
-      console.error('Error initializing Twilio client:', error);
-    });
-
-    // Cleanup on unmount
-    return () => {
-      if (conversationsClient) {
-        conversationsClient.shutdown();
+        // Fetch initial conversations
+        const paginator = await conversationsClient.getSubscribedConversations();
+        for (const conversation of paginator.items) {
+          const extendedConversation = asExtendedConversation(conversation);
+          dispatch(addConversation(extendedConversation));
+          
+          // Fetch unread count
+          const unreadCount = await fetchUnreadCount(conversation);
+          dispatch(updateUnreadCount({
+            conversationId: conversation.sid,
+            count: unreadCount
+          }));
+        }
+      } catch (error) {
+        console.error('Error initializing conversations:', error);
       }
     };
-  }, [initialToken, dispatch]);
 
-  return client;
+    initializeConversations();
+
+    return () => {
+      conversationsClient.removeAllListeners();
+    };
+  }, [conversationsClient, dispatch]);
 }; 

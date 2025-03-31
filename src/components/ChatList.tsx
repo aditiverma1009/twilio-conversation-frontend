@@ -3,10 +3,11 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store/store';
 import { setCurrentConversation } from '../store/slices/chatSlice';
 import { ExtendedConversation } from '../types/twilio';
+import { useAppDispatch } from '../hooks/reduxHook';
 
 const ChatList: React.FC = () => {
-  const dispatch = useDispatch();
-  const { conversations, currentConversation } = useSelector((state: RootState) => state.chat);
+  const dispatch = useAppDispatch();
+  const { conversations, currentConversation, unreadCounts } = useSelector((state: RootState) => state.chat);
 
   const handleConversationClick = (conversation: ExtendedConversation) => {
     dispatch(setCurrentConversation(conversation));
@@ -28,12 +29,19 @@ const ChatList: React.FC = () => {
               <div>
                 <h3 className="font-medium">{conversation.friendlyName || 'Unnamed Chat'}</h3>
                 <p className="text-sm text-gray-500">
-                  {conversation.participants?.length || 0} participants
+                  Last message
                 </p>
               </div>
-              <span className="text-xs text-gray-400">
-                {new Date(conversation.dateUpdated || '').toLocaleDateString()}
-              </span>
+              <div className="flex items-center gap-2">
+                {unreadCounts[conversation.sid] > 0 && (
+                  <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1">
+                    {unreadCounts[conversation.sid]}
+                  </span>
+                )}
+                <span className="text-xs text-gray-400">
+                  {new Date(conversation.dateUpdated || '').toLocaleDateString()}
+                </span>
+              </div>
             </div>
           </div>
         ))}

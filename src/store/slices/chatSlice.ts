@@ -19,12 +19,13 @@ const chatSlice = createSlice({
   name: 'chat',
   initialState,
   reducers: {
-    addMessage: (state, action: PayloadAction<ExtendedMessage>) => {
-      const { conversation } = action.payload;
-      if (!state.messages[conversation.sid]) {
-        state.messages[conversation.sid] = [];
+    addConversation: (state, action: PayloadAction<ExtendedConversation>) => {
+      const conversation = action.payload;
+      const exists = state.conversations.some(conv => conv.sid === conversation.sid);
+      if (!exists) {
+        // @ts-expect-error ts-migrate(2339) 
+        state.conversations.push(conversation);
       }
-      state.messages[conversation.sid].push(action.payload);
     },
     updateConversation: (state, action: PayloadAction<ExtendedConversation>) => {
       const index = state.conversations.findIndex(
@@ -32,8 +33,6 @@ const chatSlice = createSlice({
       );
       if (index !== -1) {
         state.conversations[index] = action.payload;
-      } else {
-        state.conversations.push(action.payload);
       }
     },
     removeConversation: (state, action: PayloadAction<string>) => {
@@ -47,36 +46,28 @@ const chatSlice = createSlice({
     setCurrentConversation: (state, action: PayloadAction<ExtendedConversation | null>) => {
       state.currentConversation = action.payload;
     },
+    setConversations: (state, action: PayloadAction<ExtendedConversation[]>) => {
+      state.conversations = action.payload;
+    },
     updateUnreadCount: (state, action: PayloadAction<{ conversationId: string; count: number }>) => {
       const { conversationId, count } = action.payload;
       state.unreadCounts[conversationId] = count;
-      
-      // Update the conversation's unread count
-      const conversation = state.conversations.find(conv => conv.sid === conversationId);
-      if (conversation) {
-        conversation.unreadMessageCount = count;
-      }
     },
     markMessagesAsRead: (state, action: PayloadAction<string>) => {
       const conversationId = action.payload;
       state.unreadCounts[conversationId] = 0;
-      
-      // Update the conversation's unread count
-      const conversation = state.conversations.find(conv => conv.sid === conversationId);
-      if (conversation) {
-        conversation.unreadMessageCount = 0;
-      }
     },
   },
 });
 
 export const {
-  addMessage,
+  addConversation,
   updateConversation,
   removeConversation,
   setCurrentConversation,
   updateUnreadCount,
   markMessagesAsRead,
+  setConversations,
 } = chatSlice.actions;
 
 export default chatSlice.reducer; 
