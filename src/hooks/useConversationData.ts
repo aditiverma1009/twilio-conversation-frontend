@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Message, Paginator, MessageUpdateReason } from '@twilio/conversations';
 import { ExtendedMessage, ExtendedConversation, asExtendedMessage } from '../types/twilio';
 import axios from 'axios';
+import { API_ROUTES } from '../config/api';
+
 interface Participant {
   sid: string;
   identity: string;
@@ -39,11 +41,14 @@ export const useConversationData = ({
   const fetchParticipants = useCallback(async () => {
     if (!conversation) return;
     try {
-      const response = await axios.get(`/api/conversations/${conversation.sid}/participants`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`
+      const response = await axios.get(
+        API_ROUTES.CONVERSATIONS.PARTICIPANTS(conversation.sid),
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('jwt')}`
+          }
         }
-      });
+      );
       setParticipants(response.data.participants);
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to fetch participants'));
@@ -108,7 +113,7 @@ export const useConversationData = ({
         const index = prev.findIndex(m => m.sid === message.sid);
         if (index !== -1) {
           const newMessages = [...prev];
-          newMessages[index] = message;
+          newMessages[index] = asExtendedMessage(message);
           return newMessages;
         }
         return prev;

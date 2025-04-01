@@ -1,40 +1,46 @@
 import React, { useEffect, useState } from 'react';
-import { useTwilioChat } from '../hooks/useTwilioChat';
-import { useDispatch } from 'react-redux';
-import axios from 'axios';
 import { Client } from '@twilio/conversations';
+import { useTwilioChat } from '../hooks/useTwilioChat';
+import { getTwilioToken } from '../services/twilioService';
 
-export const ChatInitializer: React.FC = () => {
-  const dispatch = useDispatch();
-  const [token, setToken] = React.useState<string | null>(null);
+interface ChatInitializerProps {
+  isAuthenticated: boolean;
+  onClientInitialized: (client: Client | null) => void;
+}
+
+const ChatInitializer: React.FC<ChatInitializerProps> = ({ isAuthenticated, onClientInitialized }) => {
   const [client, setClient] = useState<Client | null>(null);
 
   useEffect(() => {
-    const fetchToken = async () => {
-      try {
-        const response = await axios.get('/api/twilio/token', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('jwt')}`
-          }
-        });
-        const token = response.data.accessToken;
-        if (token) {
+    const initializeTwilioClient = async () => {
+      if (isAuthenticated) {
+        try {
+          const token = await getTwilioToken();
           const newClient = new Client(token);
-          setToken(response.data.accessToken);
+          await newClient.initialize();
           setClient(newClient);
+          onClientInitialized(newClient);
+        } catch (error) {
+          console.error('Error initializing Twilio client:', error);
+          onClientInitialized(null);
         }
-      } catch (error) {
-        console.error('Error fetching Twilio token:', error);
       }
     };
 
-    fetchToken();
-  }, []);
+    initializeTwilioClient();
 
-  // Initialize Twilio client with the token
+    return () => {
+      if (client) {
+        client.shutdown();
+      }
+    };
+  }, [isAuthenticated, onClientInitialized]);
+
   if (client) {
     useTwilioChat(client);
   }
 
   return null;
-}; 
+};
+
+export default ChatInitializer; 

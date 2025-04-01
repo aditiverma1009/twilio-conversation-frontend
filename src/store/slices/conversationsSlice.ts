@@ -16,6 +16,7 @@ const conversationsSlice = createSlice({
   initialState,
   reducers: {
     setConversations: (state, action: PayloadAction<ExtendedConversation[]>) => {
+      // @ts-expect-error ts-migrate
       state.conversations = action.payload;
     },
     setCurrentConversation: (state, action: PayloadAction<ExtendedConversation | null>) => {

@@ -1,47 +1,45 @@
-import React from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../store/store';
-import { setCurrentConversation } from '../store/slices/chatSlice';
-import { ExtendedConversation } from '../types/twilio';
-import { useAppDispatch } from '../hooks/reduxHook';
+import React, { useEffect } from 'react';
+import { useAppDispatch, useAppSelector } from '../hooks/reduxHooks';
+import { fetchConversations, fetchFullConversation } from '../store/slices/chatSlice';
+import { useTwilioChat } from '../hooks/useTwilioChat';
+import { Client } from '@twilio/conversations';
 
-const ChatList: React.FC = () => {
+interface ChatListProps {
+  client: Client | null;
+}
+
+const ChatList: React.FC<ChatListProps> = ({ client }) => {
   const dispatch = useAppDispatch();
-  const { conversations, currentConversation, unreadCounts } = useSelector((state: RootState) => state.chat);
+  const { conversations, currentConversation, isLoading } = useAppSelector(state => state.chat);
 
-  const handleConversationClick = (conversation: ExtendedConversation) => {
-    dispatch(setCurrentConversation(conversation));
+  useEffect(() => {
+    dispatch(fetchConversations());
+  }, [dispatch]);
+
+  const handleConversationSelect = async (conversationSid: string) => {
+    if (client) {
+      await dispatch(fetchFullConversation({ client, conversationSid }));
+    }
   };
 
+  if (isLoading) {
+    return <div className="p-4">Loading conversations...</div>;
+  }
+
   return (
-    <div className="w-1/2 h-full border-r border-gray-200 overflow-y-auto">
-      <div className="p-4">
-        <h2 className="text-xl font-semibold mb-4">Conversations</h2>
+    <div className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto">
         {conversations.map((conversation) => (
           <div
             key={conversation.sid}
-            className={`p-4 cursor-pointer hover:bg-gray-50 ${
-              currentConversation?.sid === conversation.sid ? 'bg-blue-50' : ''
+            className={`p-4 cursor-pointer hover:bg-gray-100 ${
+              currentConversation?.sid === conversation.sid ? 'bg-gray-100' : ''
             }`}
-            onClick={() => handleConversationClick(conversation)}
+            onClick={() => handleConversationSelect(conversation.sid)}
           >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium">{conversation.friendlyName || 'Unnamed Chat'}</h3>
-                <p className="text-sm text-gray-500">
-                  Last message
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {unreadCounts[conversation.sid] > 0 && (
-                  <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1">
-                    {unreadCounts[conversation.sid]}
-                  </span>
-                )}
-                <span className="text-xs text-gray-400">
-                  {new Date(conversation.dateUpdated || '').toLocaleDateString()}
-                </span>
-              </div>
+            <div className="font-medium">{conversation.friendlyName || 'Unnamed Chat'}</div>
+            <div className="text-sm text-gray-500">
+              {new Date(conversation.dateUpdated).toLocaleDateString()}
             </div>
           </div>
         ))}

@@ -1,80 +1,48 @@
-import React, { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { Client, Paginator } from '@twilio/conversations';
-import ChatList from './components/ChatList';
-import ChatWindow from './components/ChatWindow';
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import { store } from './store/store';
 import Login from './components/Login';
 import Register from './components/Register';
-import { setConversations } from './store/slices/chatSlice';
-import { RootState } from './store/store';
-import { ExtendedConversation, asExtendedConversation } from './types/twilio';
+import ChatList from './components/ChatList';
+import ChatWindow from './components/ChatWindow';
+import ChatInitializer from './components/ChatInitializer';
+import { useAppSelector } from './hooks/reduxHooks';
+import { useSelector } from 'react-redux';
+import { RootState } from './store';
+import { Client } from '@twilio/conversations';
 
-const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
+const AppContent: React.FC = () => {
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  const [twilioClient, setTwilioClient] = useState<Client | null>(null);
+
+  return (
+    <div className="flex h-screen">
+      <ChatInitializer 
+        isAuthenticated={isAuthenticated} 
+        onClientInitialized={setTwilioClient}
+      />
+      <div className="w-1/4 border-r">
+        <ChatList client={twilioClient} />
+      </div>
+      <div className="flex-1">
+        <ChatWindow />
+      </div>
+    </div>
+  );
 };
 
 const App: React.FC = () => {
-  const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  const [client, setClient] = React.useState<Client | null>(null);
-
-  useEffect(() => {
-    const initializeTwilioClient = async () => {
-      if (!isAuthenticated) return;
-
-      try {
-        // TODO: Get token from backend
-        const token = 'YOUR_TWILIO_TOKEN';
-        const twilioClient = new Client(token);
-        
-        twilioClient.on('conversationAdded', async (conversation) => {
-          const extendedConversation = asExtendedConversation(conversation);
-          const paginator = await twilioClient.getSubscribedConversations();
-          const conversations = paginator.items;
-          dispatch(setConversations([...conversations, extendedConversation]));
-        });
-
-        await twilioClient.initialize();
-        setClient(twilioClient);
-        
-        // Get initial conversations
-        const conversations = await twilioClient.getSubscribedConversations();
-        const extendedConversations = conversations.items.map(asExtendedConversation);
-        dispatch(setConversations(extendedConversations));
-      } catch (error) {
-        console.error('Error initializing Twilio client:', error);
-      }
-    };
-
-    initializeTwilioClient();
-
-    return () => {
-      if (client) {
-        client.shutdown();
-      }
-    };
-  }, [dispatch, isAuthenticated]);
-
   return (
-    <Router>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route
-          path="/"
-          element={
-            <PrivateRoute>
-              <div className="h-screen flex">
-                <ChatList />
-                <ChatWindow />
-              </div>
-            </PrivateRoute>
-          }
-        />
-      </Routes>
-    </Router>
+    <Provider store={store}>
+      <Router>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/" element={<AppContent />} />
+        </Routes>
+      </Router>
+    </Provider>
   );
 };
 

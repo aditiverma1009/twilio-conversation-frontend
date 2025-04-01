@@ -1,72 +1,29 @@
 import { useEffect } from 'react';
-import { useDispatch } from 'react-redux';
-import { Client, Conversation, Message } from '@twilio/conversations';
-import { addConversation, updateConversation, updateUnreadCount } from '../store/slices/chatSlice';
-import { ExtendedConversation, asExtendedConversation } from '../types/twilio';
-import { useAppDispatch } from './reduxHook';
+import { Client, Message } from '@twilio/conversations';
+import { useAppDispatch } from '../hooks/reduxHooks';
+import { addMessage } from '../store/slices/chatSlice';
 
-export const useTwilioChat = (conversationsClient: Client) => {
+export const useTwilioChat = (client: Client) => {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    const fetchUnreadCount = async (conversation: Conversation) => {
-      const count = await conversation.getUnreadMessagesCount();
-      return count || 0;
+    const handleMessageAdded = (message: Message) => {
+      dispatch(addMessage({
+        sid: message.sid,
+        conversationSid: message.conversation.sid,
+        body: message.body,
+        author: message.author,
+        dateCreated: message.dateCreated,
+        index: message.index,
+        attributes: message.attributes,
+      }));
     };
 
-    // Handle conversation updates
-    conversationsClient.on('conversationUpdated', async (data: { conversation: Conversation; updateReasons: string[] }) => {
-      const conversation = data.conversation;
-      const extendedConversation = asExtendedConversation(conversation);
-      dispatch(updateConversation(extendedConversation));
-      
-      // Update unread count
-      const unreadCount = await fetchUnreadCount(conversation);
-      dispatch(updateUnreadCount({
-        conversationId: conversation.sid,
-        count: unreadCount
-      }));
-    });
-
-    // Handle message updates (including read status)
-    conversationsClient.on('messageUpdated', async ({ message }) => {
-      const conversation = await conversationsClient.getConversationBySid(message.conversation.sid);
-      if (!conversation) return; // Prevent errors if conversation is undefined
-    
-      const unreadCount = await fetchUnreadCount(conversation);
-      dispatch(updateUnreadCount({
-        conversationId: conversation.sid,
-        count: unreadCount
-      }));
-    });
-
-    // Initialize conversations
-    const initializeConversations = async () => {
-      try {
-        await conversationsClient.initialize();
-        
-        // Fetch initial conversations
-        const paginator = await conversationsClient.getSubscribedConversations();
-        for (const conversation of paginator.items) {
-          const extendedConversation = asExtendedConversation(conversation);
-          dispatch(addConversation(extendedConversation));
-          
-          // Fetch unread count
-          const unreadCount = await fetchUnreadCount(conversation);
-          dispatch(updateUnreadCount({
-            conversationId: conversation.sid,
-            count: unreadCount
-          }));
-        }
-      } catch (error) {
-        console.error('Error initializing conversations:', error);
-      }
-    };
-
-    initializeConversations();
+    // Subscribe to message events
+    client.on('messageAdded', handleMessageAdded);
 
     return () => {
-      conversationsClient.removeAllListeners();
+      client.removeListener('messageAdded', handleMessageAdded);
     };
-  }, [conversationsClient, dispatch]);
+  }, [client, dispatch]);
 }; 

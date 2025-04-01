@@ -18,16 +18,7 @@
     "/conversations": {
       "get": {
         "operationId": "ConversationsController_getConversations",
-        "parameters": [
-          {
-            "name": "status",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": "List of conversations with pagination",
@@ -86,12 +77,12 @@
         ]
       }
     },
-    "/conversations/{conversationSid}": {
+    "/conversations/{sid}": {
       "get": {
         "operationId": "ConversationsController_getConversation",
         "parameters": [
           {
-            "name": "conversationSid",
+            "name": "sid",
             "required": true,
             "in": "path",
             "schema": {
@@ -122,12 +113,12 @@
         ]
       }
     },
-    "/conversations/{conversationSid}/participants": {
+    "/conversations/{sid}/participants": {
       "get": {
         "operationId": "ConversationsController_getParticipants",
         "parameters": [
           {
-            "name": "conversationSid",
+            "name": "sid",
             "required": true,
             "in": "path",
             "schema": {
@@ -156,7 +147,9 @@
         "tags": [
           "Conversations"
         ]
-      },
+      }
+    },
+    "/conversations/{conversationSid}/participants": {
       "post": {
         "operationId": "ConversationsController_addParticipants",
         "parameters": [
@@ -246,7 +239,22 @@
         ]
       }
     },
-    "/auth": {
+    "/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Register a new user",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/login": {
       "post": {
         "operationId": "AuthController_login",
         "parameters": [],
@@ -297,17 +305,13 @@
         "type": "object",
         "properties": {
           "success": {
-            "type": "boolean",
-            "description": "Whether the request was successful",
-            "example": true
+            "type": "boolean"
           },
           "data": {
-            "type": "object",
-            "description": "The response data"
+            "type": "object"
           },
           "error": {
-            "type": "string",
-            "description": "Error message if request failed"
+            "type": "string"
           }
         },
         "required": [
@@ -319,17 +323,13 @@
         "type": "object",
         "properties": {
           "success": {
-            "type": "boolean",
-            "description": "Whether the request was successful",
-            "example": true
+            "type": "boolean"
           },
           "data": {
-            "type": "object",
-            "description": "The response data"
+            "type": "object"
           },
           "error": {
-            "type": "string",
-            "description": "Error message if request failed"
+            "type": "string"
           }
         },
         "required": [
@@ -365,17 +365,13 @@
         "type": "object",
         "properties": {
           "success": {
-            "type": "boolean",
-            "description": "Whether the request was successful",
-            "example": true
+            "type": "boolean"
           },
           "data": {
-            "type": "object",
-            "description": "The response data"
+            "type": "object"
           },
           "error": {
-            "type": "string",
-            "description": "Error message if request failed"
+            "type": "string"
           }
         },
         "required": [
@@ -406,17 +402,13 @@
         "type": "object",
         "properties": {
           "success": {
-            "type": "boolean",
-            "description": "Whether the request was successful",
-            "example": true
+            "type": "boolean"
           },
           "data": {
-            "type": "object",
-            "description": "The response data"
+            "type": "object"
           },
           "error": {
-            "type": "string",
-            "description": "Error message if request failed"
+            "type": "string"
           }
         },
         "required": [

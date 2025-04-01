@@ -1,11 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../store/store';
-import { ExtendedConversation, ExtendedMessage, asExtendedMessage, asExtendedMedia } from '../types/twilio';
+import { useAppSelector } from '../hooks/reduxHooks';
+import { useConversationData } from '../hooks/useConversationData';
 
 const ChatWindow: React.FC = () => {
-  const dispatch = useDispatch();
-  const { currentConversation, messages } = useSelector((state: RootState) => state.chat);
+  const { currentConversation, messages } = useAppSelector((state) => state.chat);
+  const { messages: conversationMessages, participants, unreadCount, hasMoreMessages, loadMoreMessages, isLoading } = 
+    useConversationData({ conversation: currentConversation });
   const [message, setMessage] = useState('');
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -55,66 +55,42 @@ const ChatWindow: React.FC = () => {
 
   if (!currentConversation) {
     return (
-      <div className="w-1/2 h-full flex items-center justify-center bg-gray-50">
+      <div className="flex-1 flex items-center justify-center">
         <p className="text-gray-500">Select a conversation to start chatting</p>
       </div>
     );
   }
 
-  const conversationMessages = messages[currentConversation.sid] || [];
-
   return (
-    <div className="w-1/2 h-full flex flex-col">
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="text-xl font-semibold">{currentConversation.friendlyName || 'Chat'}</h2>
+    <div className="flex-1 flex flex-col">
+      <div className="p-4 border-b">
+        <h2 className="text-xl font-semibold">{currentConversation.friendlyName || 'Unnamed Chat'}</h2>
+        <p className="text-sm text-gray-500">{participants.length} participants</p>
       </div>
-
       <div className="flex-1 overflow-y-auto p-4">
-        {conversationMessages.map((msg) => {
-          const extendedMessage = asExtendedMessage(msg);
-          return (
-            <div
-              key={msg.sid}
-              className={`mb-4 flex ${
-                msg.author === localStorage.getItem('userId') ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              <div
-                className={`max-w-[70%] rounded-lg p-3 ${
-                  msg.author === localStorage.getItem('userId')
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100'
-                }`}
-              >
-                <div className="text-sm font-medium mb-1">
-                  {msg.author === localStorage.getItem('userId') ? 'You' : msg.author}
-                </div>
-                <div className="text-sm">{msg.body}</div>
-                {extendedMessage.attachedMedia && extendedMessage.attachedMedia.length > 0 && (
-                  <div className="mt-2">
-                    {extendedMessage.attachedMedia.map((media, index) => {
-                      const extendedMedia = asExtendedMedia(media);
-                      return (
-                        <img
-                          key={index}
-                          src={extendedMedia.url}
-                          alt={`Media ${index + 1}`}
-                          className="max-w-full rounded mt-2"
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-                <div className="text-xs mt-1 opacity-75">
-                  {new Date(msg.dateCreated || '').toLocaleTimeString()}
-                </div>
+        {conversationMessages.map((message) => (
+          <div key={message.sid} className="mb-4">
+            <div className="flex items-start">
+              <div className="flex-1">
+                <p className="font-medium">{message.author}</p>
+                <p>{message.body}</p>
               </div>
+              <span className="text-xs text-gray-400">
+                {new Date(message.dateCreated || '').toLocaleTimeString()}
+              </span>
             </div>
-          );
-        })}
-        <div ref={messagesEndRef} />
+          </div>
+        ))}
+        {isLoading && <p>Loading...</p>}
+        {hasMoreMessages && (
+          <button
+            onClick={loadMoreMessages}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Load More
+          </button>
+        )}
       </div>
-
       <div className="p-4 border-t border-gray-200">
         {mediaFiles.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
